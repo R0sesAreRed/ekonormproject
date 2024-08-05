@@ -1,0 +1,31 @@
+{
+  "name": "ekonormapp",
+  "version": "1.0.0",
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~3.2.1",
+    "expo": "~51.0.18",
+    "expo-dev-client": "^4.0.19",
+    "expo-status-bar": "~1.12.1",
+    "history": "^5.3.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.74.3",
+    "react-native-fs": "^2.20.0",
+    "react-native-paper": "^5.12.3",
+    "react-native-radio-buttons-group": "^3.1.0",
+    "react-native-web": "~0.19.10",
+    "react-router-native": "^6.24.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "private": true
+}
