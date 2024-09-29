@@ -7,6 +7,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
   TouchableOpacity,
+  Text,
 } from "react-native";
 import { RadioButton, Provider as PaperProvider } from "react-native-paper";
 
@@ -137,16 +138,19 @@ const styles = StyleSheet.create({
 
   radioButtonContainer: {
     width: screenWidth - 50,
-
+    justifyContent: "center",
     flexDirection: "row-reverse",
     alignSelf: "flex-start",
-    alignItems: "middl",
+    alignItems: "center",
     paddingTop: 5,
+    flex: 0,
   },
   radioButtonLabel: {
     marginLeft: 8,
     fontSize: 16,
     color: "hsl(0, 0%, 96%)",
+    justifyContent: "center",
+    flex: 1,
   },
 });
 
