@@ -323,10 +323,10 @@ const styles = StyleSheet.create({
     // justifyContent: "center",
   },
   topLeftView: {
-    position: "absolute",
+    //position: "absolute",
     top: 20,
     left: 0,
     width: screenWidth,
-    height: 100,
+    //height: 100,
   },
 });
