@@ -255,6 +255,9 @@ export default function MainPage() {
 }
 
 const styles = StyleSheet.create({
+  textBig: {
+    fontSize: 80,
+  },
   safeArea: {
     flex: 1,
   },
@@ -317,7 +320,7 @@ const styles = StyleSheet.create({
     backgroundColor: "hsl(240, 12%, 23%)",
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: "hsl(240, 16%, 18%)",
     // alignItems: "center",
     // justifyContent: "center",
@@ -327,6 +330,6 @@ const styles = StyleSheet.create({
     top: 20,
     left: 0,
     width: screenWidth,
-    //height: 100,
+    height: 1000,
   },
 });
