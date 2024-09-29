@@ -132,138 +132,131 @@ export default function MainPage() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
-          <View>
-            <View style={styles.topLeftView}>
-              <View>
-                <Text style={styles.text}>Numer Ujęcia</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
+        <View>
+          <View style={styles.topLeftView}>
+            <View>
+              <Text style={styles.text}>Numer Ujęcia</Text>
+              <TextInput
+                style={styles.inputNarr}
+                autoCorrect={false}
+                enterKeyHint={"next"}
+                inputMode={"decimal"}
+                value={takeNo}
+                //placeholder={`${context.currency}`}
+                onChangeText={(newValue) => setTakeNo(newValue)}
+              />
+            </View>
+            <View>
+              <Text style={styles.text}>
+                Symbol lub nazwa elmentu instalacji
+              </Text>
+              <TextInput
+                style={styles.inputWide}
+                autoCorrect={false}
+                enterKeyHint={"next"}
+                inputMode={"default"}
+                value={elementName}
+                //placeholder={`${context.currency}`}
+                onChangeText={(newValue) => setElementName(newValue)}
+              />
+            </View>
+            <View style={{ flexDirection: "row" }}>
+              <Text style={styles.text}>Dzień:</Text>
+              <Text style={styles.text}>
+                {context.date.day +
+                  "-" +
+                  context.date.month +
+                  "-" +
+                  context.date.year}
+              </Text>
+              <Text style={styles.text}>Godz:</Text>
+              <Text style={styles.text}>
+                {context.date.hour + ":" + context.date.minute}
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.text}>Substancja:</Text>
+              <TextInput
+                style={styles.inputWide}
+                autoCorrect={false}
+                enterKeyHint={"next"}
+                inputMode={"default"}
+                value={substance}
+                //placeholder={`${context.currency}`}
+                onChangeText={(newValue) => setSubstance(newValue)}
+              />
+            </View>
+            <View>
+              <Text style={styles.text}>Element:</Text>
+              <TouchableOpacity
+                onPress={openModal}
+                style={styles.elementSelect}
+              ></TouchableOpacity>
+              <TextInput
+                style={styles.inputWide}
+                value={buttonTitle}
+              ></TextInput>
+              <ReadioButtons
+                visible={modalVisible}
+                onClose={closeModal}
+                onChangeTitle={changeButtonTitle}
+                initialTitle={buttonTitle}
+              />
+            </View>
+            <View>
+              <Text style={styles.text}>Stężenie</Text>
+              <View style={{ flexDirection: "row" }}>
+                <Text style={styles.textCentered}>PID</Text>
                 <TextInput
                   style={styles.inputNarr}
                   autoCorrect={false}
                   enterKeyHint={"next"}
                   inputMode={"decimal"}
-                  value={takeNo}
+                  value={pid}
                   //placeholder={`${context.currency}`}
-                  onChangeText={(newValue) => setTakeNo(newValue)}
-                />
-              </View>
-              <View>
-                <Text style={styles.text}>
-                  Symbol lub nazwa elmentu instalacji
-                </Text>
-                <TextInput
-                  style={styles.inputWide}
-                  autoCorrect={false}
-                  enterKeyHint={"next"}
-                  inputMode={"default"}
-                  value={elementName}
-                  //placeholder={`${context.currency}`}
-                  onChangeText={(newValue) => setElementName(newValue)}
+                  onChangeText={(newValue) => setpid(newValue)}
                 />
               </View>
               <View style={{ flexDirection: "row" }}>
-                <Text style={styles.text}>Dzień:</Text>
-                <Text style={styles.text}>
-                  {context.date.day +
-                    "-" +
-                    context.date.month +
-                    "-" +
-                    context.date.year}
-                </Text>
-                <Text style={styles.text}>Godz:</Text>
-                <Text style={styles.text}>
-                  {context.date.hour + ":" + context.date.minute}
-                </Text>
-              </View>
-              <View>
-                <Text style={styles.text}>Substancja:</Text>
+                <Text style={styles.textCentered}>FID</Text>
                 <TextInput
-                  style={styles.inputWide}
+                  style={styles.inputNarr}
                   autoCorrect={false}
                   enterKeyHint={"next"}
-                  inputMode={"default"}
-                  value={substance}
+                  inputMode={"decimal"}
+                  value={fid}
                   //placeholder={`${context.currency}`}
-                  onChangeText={(newValue) => setSubstance(newValue)}
+                  onChangeText={(newValue) => setfid(newValue)}
                 />
-              </View>
-              <View>
-                <Text style={styles.text}>Element:</Text>
-                <TouchableOpacity
-                  onPress={openModal}
-                  style={styles.elementSelect}
-                ></TouchableOpacity>
-                <TextInput
-                  style={styles.inputWide}
-                  value={buttonTitle}
-                ></TextInput>
-                <ReadioButtons
-                  visible={modalVisible}
-                  onClose={closeModal}
-                  onChangeTitle={changeButtonTitle}
-                  initialTitle={buttonTitle}
-                />
-              </View>
-              <View>
-                <Text style={styles.text}>Stężenie</Text>
-                <View style={{ flexDirection: "row" }}>
-                  <Text style={styles.textCentered}>PID</Text>
-                  <TextInput
-                    style={styles.inputNarr}
-                    autoCorrect={false}
-                    enterKeyHint={"next"}
-                    inputMode={"decimal"}
-                    value={pid}
-                    //placeholder={`${context.currency}`}
-                    onChangeText={(newValue) => setpid(newValue)}
-                  />
-                </View>
-                <View style={{ flexDirection: "row" }}>
-                  <Text style={styles.textCentered}>FID</Text>
-                  <TextInput
-                    style={styles.inputNarr}
-                    autoCorrect={false}
-                    enterKeyHint={"next"}
-                    inputMode={"decimal"}
-                    value={fid}
-                    //placeholder={`${context.currency}`}
-                    onChangeText={(newValue) => setfid(newValue)}
-                  />
-                  <Text style={styles.textCentered}>ppm</Text>
-                </View>
-              </View>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button} onPress={addToJson}>
-                  <Text
-                    style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}
-                  >
-                    Dodaj
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.button} onPress={addToJson}>
-                  <Text
-                    style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}
-                  >
-                    Zapisz plik
-                  </Text>
-                </TouchableOpacity>
+                <Text style={styles.textCentered}>ppm</Text>
               </View>
             </View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.button} onPress={addToJson}>
+                <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
+                  Dodaj
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.button} onPress={addToJson}>
+                <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
+                  Zapisz plik
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </TouchableWithoutFeedback>
-      </ScrollView>
-    </SafeAreaView>
+        </View>
+      </TouchableWithoutFeedback>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingTop: StatusBar.currentHeight,
   },
   text: {
     color: "hsl(0, 0%, 96%)",

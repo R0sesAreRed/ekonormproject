@@ -2,7 +2,7 @@
   "expo": {
     "name": "ekonormApp",
     "slug": "ekonormapp",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "sdkVersion": "51.0.31",
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
