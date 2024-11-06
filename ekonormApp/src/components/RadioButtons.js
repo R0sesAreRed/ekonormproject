@@ -6,8 +6,6 @@ import {
   Button,
   Modal,
   TouchableWithoutFeedback,
-  TouchableOpacity,
-  Text,
 } from "react-native";
 import { RadioButton, Provider as PaperProvider } from "react-native-paper";
 
@@ -45,8 +43,8 @@ const ReadioButtons = ({ visible, onClose, onChangeTitle, initialTitle }) => {
                   value={checked}
                 >
                   <RadioButton.Item
-                    value="Zawór Gaz"
-                    label="Zawór Gaz"
+                    value="Zawór gaz"
+                    label="Zawór gaz"
                     style={styles.radioButtonContainer}
                     labelStyle={styles.radioButtonLabel}
                   />
