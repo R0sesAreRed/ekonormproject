@@ -11,7 +11,6 @@ import {
   Text,
 } from "react-native";
 import { PureComponent } from "react";
-import { useEffect } from "react";
 
 const { width: screenWidth } = Dimensions.get("window");
 

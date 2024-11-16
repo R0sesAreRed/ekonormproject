@@ -14,10 +14,11 @@ export default function SelectProjectAction({
   visible,
   onClose,
   renameFunction,
+  id,
   deleteFunction,
 }) {
   const deleteAction = () => {
-    deleteFunction();
+    deleteFunction(id);
     onClose();
   };
 
@@ -30,12 +31,20 @@ export default function SelectProjectAction({
     <Modal transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={styles.wrapView}>
         <View style={styles.view}>
-          <TouchableOpacity>
-            <Text></Text>
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Text></Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={renameAction}>
+              <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
+                Zmień nazwę projektu
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={deleteAction}>
+              <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
+                Usuń projekt
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -56,22 +65,7 @@ const styles = StyleSheet.create({
     color: "hsl(0, 0%, 96%)",
     border: "1px solid hsl(0, 0%, 96%)",
     borderRadius: 7.5,
-    backgroundColor: "hsl(240, 12%, 23%)",
-  },
-  buttonView: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingBottom: 10,
-  },
-  button: {
-    width: (screenWidth - 80) / 2,
-    height: 40,
-    backgroundColor: "hsla(272, 53%, 67%, .5)",
-    border: "1px solid transparent",
-    borderRadius: 8,
-    paddingLeft: 20,
-    paddingRight: 20,
-    paddingTop: 8,
+    backgroundColor: "hsl(240, 16%, 35%)",
   },
   text: {
     color: "hsl(0, 0%, 96%)",
@@ -82,5 +76,17 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingTop: 10,
     paddingLeft: 15,
+    paddingBottom: 10,
+  },
+  button: {
+    width: screenWidth - 85,
+    height: 40,
+    backgroundColor: "hsla(272, 53%, 67%, .5)",
+    border: "1px solid transparent",
+    borderRadius: 8,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
 });

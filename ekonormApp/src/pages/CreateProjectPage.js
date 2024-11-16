@@ -2,14 +2,12 @@ import {
   StyleSheet,
   View,
   TextInput,
-  Button,
   FlatList,
   Text,
   TouchableOpacity,
   SafeAreaView,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
+  Modal,
 } from "react-native";
 import React, { useContext, useEffect, useState } from "react";
 import { AppContext } from "../context/context";
@@ -21,6 +19,10 @@ import {
 } from "../utils/dataStorage";
 import { useNavigate } from "react-router-native";
 import Confirm from "../components/Confirm";
+import ProjectTypeSelect from "../components/ProjectTypeSelect";
+import RenameProjectAction from "../components/RenameProjectAction";
+import SelectProjectAction from "../components/SelectProjectAction";
+import ProjectWorkTypeSelect from "../components/ProjectWorkTypeSelect";
 
 const { width: screenWidth } = Dimensions.get("window");
 const { height: screenHeigth } = Dimensions.get("window");
@@ -29,24 +31,86 @@ export default function CreateProjectPage() {
   const context = useContext(AppContext);
   const [projectList, setProjectList] = useState([]);
   const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectType, setNewProjectType] = useState("Przemysł chemiczny"); //chem - true, petrochem - false
+  const [newProjectWorkType, setNewProjectWorkType] =
+    useState("Inwentaryzacja"); //pomiar - true, inwentaryzacja - false
+
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [currItem, setCurrItem] = useState("");
 
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmMessage, setconfirmMessage] = useState("");
-
+  const confirmDeleteButton = (name) => {
+    setConfirmMessage(
+      "Czy na pewno chcesz usunąć projekt " +
+        name +
+        "?\nUsunie to tylko wewnętrzne dane aplikacji, nie wpływając na wyeksportowane pliki.\n"
+    );
+    setConfirmDelete(true);
+  };
   const closeConfirmDelete = () => {
     setConfirmDelete(false);
   };
-  const newProject = async (data) => {
-    if (data.length > 0) {
-      const key = data.toUpperCase().replace(/\s+/g, "_");
+
+  const [selectModal, setSelectModal] = useState(false);
+  const openSelectModal = (data) => {
+    setCurrItem(data);
+    setSelectModal(true);
+  };
+  const closeSelectModal = () => {
+    setSelectModal(false);
+  };
+
+  const [renameModal, setRenameModal] = useState(false);
+  const closeRenameModal = () => {
+    setRenameModal(false);
+  };
+  const openRenameModal = () => {
+    setRenameModal(true);
+  };
+
+  const [typeSelectModal, setTypeSelectModal] = useState(false);
+  const closeTypeSelectModal = () => {
+    setTypeSelectModal(false);
+  };
+  const openTypeSelectModal = () => {
+    setTypeSelectModal(true);
+  };
+
+  const [workTypeSelectModal, setWorkTypeSelectModal] = useState(false);
+  const closeWorkTypeSelectModal = () => {
+    setWorkTypeSelectModal(false);
+  };
+  const openWorkTypeSelectModal = () => {
+    setWorkTypeSelectModal(true);
+  };
+
+  const [createProjectModal, setCreateProjectModal] = useState(false);
+  const closeCreateProjectModal = () => {
+    setCreateProjectModal(false);
+  };
+  const openCreateProjectModal = () => {
+    setCreateProjectModal(true);
+  };
+
+  const newProject = async () => {
+    if (newProjectName.length > 0) {
+      const key = newProjectName.toUpperCase().replace(/\s+/g, "_");
       if (!projectList.some((project) => project.key === key)) {
-        const projectInfo = { name: data, key: key };
+        const projectInfo = {
+          name: newProjectName,
+          key: key,
+          type: newProjectType == "Przemysł chemiczny",
+          workType: newProjectWorkType == "Pomiar",
+        };
         let projectListUpdate = [projectInfo, ...projectList];
         setProjectList(projectListUpdate);
         await addProject(projectListUpdate);
       }
       setNewProjectName("");
+    } else {
+      alert("Błąd przy tworzeniu projektu");
     }
+    closeCreateProjectModal();
   };
   const removeProject = async (id) => {
     let projectListUpdate = projectList.filter((project) => project.key !== id);
@@ -55,33 +119,29 @@ export default function CreateProjectPage() {
     deleteData("WSHT_" + id);
   };
 
-  const editProject = async (id, data) => {
+  const editProject = async (id, data, type, workType) => {
+    console.debug("Edit project: ", id, data, type, workType);
+    console.debug(currItem.key);
     if (data.length > 0) {
-      const key = data.toUpperCase().replace(/\s+/g, "_");
-      if (!projectList.some((project) => project.key === key)) {
-        const projectInfo = { name: data, key: key };
-        const index = projectList.findIndex((obj) => obj.id === id);
-        const updatedArray = [...projectList];
+      if (projectList.some((project) => project.key === id)) {
+        const projectInfo = {
+          name: data,
+          key: id,
+          type: type,
+          workType: workType,
+        };
+        const index = projectList.findIndex((obj) => obj.key === id);
+        let updatedArray = [...projectList];
         updatedArray[index] = projectInfo;
         setProjectList(updatedArray);
-        await addProject(projectListUpdate);
+        await addProject(updatedArray);
       }
     }
-
-    deleteData("WSHT_" + id);
   };
 
   const selectProject = (data) => {
-    context.setProjectKey(data.key);
-    context.setProjectName(data.name);
+    context.setProjectData(data);
     navigate("/MainPage");
-  };
-
-  const confirmDeleteButton = () => {
-    setconfirmMessage(
-      "Czy na pewno chcesz usunąć projekt?\nUsunie to tylko wewnętrzne dane aplikacji, nie wpływając na wyeksportowane pliki.\n"
-    );
-    setConfirmDelete(true);
   };
 
   useEffect(() => {
@@ -104,16 +164,29 @@ export default function CreateProjectPage() {
       <View style={styles.item}>
         <TouchableOpacity
           onPress={() => selectProject(item)}
-          onLongPress={confirmDeleteButton}
-          delayLongPress={2500}
+          onLongPress={() => openSelectModal(item)}
+          delayLongPress={1500}
         >
           <Text style={styles.flatListItemLabel}>{item.name}</Text>
         </TouchableOpacity>
+        <SelectProjectAction
+          visible={selectModal}
+          onClose={closeSelectModal}
+          renameFunction={openRenameModal}
+          id={currItem.key}
+          deleteFunction={() => confirmDeleteButton(currItem.name)}
+        />
+        <RenameProjectAction
+          visible={renameModal}
+          onClose={closeRenameModal}
+          curritem={currItem}
+          renameFunction={editProject}
+        />
         <Confirm
           visible={confirmDelete}
           onClose={closeConfirmDelete}
           displayText={confirmMessage}
-          confirmFunction={() => removeProject(item.key)}
+          confirmFunction={() => removeProject(currItem.key)}
         />
       </View>
     );
@@ -123,13 +196,7 @@ export default function CreateProjectPage() {
     // <KeyboardAvoidingView style={{ flex: 1 }} behavior="height">
     <View style={styles.container}>
       <View style={styles.topContainer}></View>
-      <View>
-        <TextInput
-          value={newProjectName}
-          onChangeText={(newValue) => setNewProjectName(newValue)}
-          style={styles.inputWide}
-        ></TextInput>
-      </View>
+
       <SafeAreaView style={styles.listContainer}>
         {projectList.length === 0 && (
           <Text style={styles.textItalic}>Brak stworzonych projektów</Text>
@@ -147,7 +214,7 @@ export default function CreateProjectPage() {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => newProject(newProjectName)}
+          onPress={openCreateProjectModal}
         >
           <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
             Stwórz projekt
@@ -155,8 +222,67 @@ export default function CreateProjectPage() {
         </TouchableOpacity>
       </View>
       <View style={{ height: 15 }} />
+
+      <Modal
+        transparent={true}
+        visible={createProjectModal}
+        onRequestClose={closeCreateProjectModal}
+      >
+        <View style={styles.wrapView}>
+          <View style={styles.view}>
+            <View>
+              <TextInput
+                placeholder="Nazwa Projektu"
+                placeholderTextColor={"hsl(0, 0%, 50%)"}
+                value={newProjectName}
+                autoCorrect={false}
+                onChangeText={(newValue) => setNewProjectName(newValue)}
+                style={styles.inputWide}
+              ></TextInput>
+            </View>
+            <View>
+              <TouchableOpacity
+                onPress={openTypeSelectModal}
+                style={styles.elementSelect}
+              ></TouchableOpacity>
+              <TextInput
+                style={styles.inputWide}
+                value={newProjectType}
+              ></TextInput>
+              <ProjectTypeSelect
+                visible={typeSelectModal}
+                onClose={closeTypeSelectModal}
+                onChangeTitle={setNewProjectType}
+                initialTitle={newProjectType}
+              />
+            </View>
+            <View>
+              <TouchableOpacity
+                onPress={openWorkTypeSelectModal}
+                style={styles.elementSelect}
+              ></TouchableOpacity>
+              <TextInput
+                style={styles.inputWide}
+                value={newProjectWorkType}
+              ></TextInput>
+              <ProjectWorkTypeSelect
+                visible={workTypeSelectModal}
+                onClose={closeWorkTypeSelectModal}
+                onChangeTitle={setNewProjectWorkType}
+                initialTitle={newProjectWorkType}
+              />
+            </View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.modalButton} onPress={newProject}>
+                <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
+                  Stwórz projekt
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
-    // {/* </KeyboardAvoidingView> */}
   );
 }
 
@@ -178,7 +304,16 @@ const styles = StyleSheet.create({
     width: screenWidth - 30,
     height: 40,
     backgroundColor: "hsla(272, 53%, 67%, .5)",
-    border: "1px solid transparent",
+    borderRadius: 8,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  modalButton: {
+    width: screenWidth - 85,
+    height: 40,
+    backgroundColor: "hsla(272, 53%, 67%, .5)",
     borderRadius: 8,
     paddingLeft: 20,
     paddingRight: 20,
@@ -200,7 +335,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
     color: "hsl(0, 0%, 96%)",
-    border: "1px solid hsl(0, 0%, 96%)",
     borderRadius: 7.5,
     backgroundColor: "hsl(240, 12%, 23%)",
     marginBottom: 15,
@@ -214,13 +348,12 @@ const styles = StyleSheet.create({
   },
   inputWide: {
     height: 50,
-    width: screenWidth - 30,
+    width: screenWidth - 85,
     marginLeft: 15,
     marginTop: 10,
     borderWidth: 1,
     padding: 10,
     color: "hsl(0, 0%, 96%)",
-    border: "1px solid hsl(0, 0%, 96%)",
     borderRadius: 7.5,
     backgroundColor: "hsl(240, 12%, 23%)",
   },
@@ -237,16 +370,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flex: 1,
   },
-  inputWide: {
-    height: 50,
+  elementSelect: {
+    zIndex: 10,
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    opacity: "100%",
+  },
+  wrapView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
+  view: {
     width: screenWidth - 30,
-    marginLeft: 15,
-    marginTop: 10,
     borderWidth: 1,
     padding: 10,
     color: "hsl(0, 0%, 96%)",
-    border: "1px solid hsl(0, 0%, 96%)",
+    borderColor: "hsl(0, 0%, 96%)",
     borderRadius: 7.5,
-    backgroundColor: "hsl(240, 12%, 23%)",
+    backgroundColor: "hsl(240, 16%, 35%)",
+  },
+  buttonView: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingBottom: 10,
   },
 });

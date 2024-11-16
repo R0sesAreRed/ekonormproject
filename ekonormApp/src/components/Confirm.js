@@ -5,7 +5,6 @@ import {
   StyleSheet,
   View,
   Text,
-  Touchable,
   Dimensions,
 } from "react-native";
 
@@ -64,7 +63,7 @@ const styles = StyleSheet.create({
     color: "hsl(0, 0%, 96%)",
     border: "1px solid hsl(0, 0%, 96%)",
     borderRadius: 7.5,
-    backgroundColor: "hsl(240, 12%, 23%)",
+    backgroundColor: "hsl(240, 16%, 35%)",
   },
   buttonView: {
     flexDirection: "row",

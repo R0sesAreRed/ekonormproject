@@ -15,7 +15,6 @@ import React from "react";
 import { AppContext } from "../context/context";
 import { useContext, useState, useEffect } from "react";
 import ReadioButtons from "../components/RadioButtons";
-import XLSX from "xlsx";
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import { loadWorksheet } from "../utils/dataStorage";
@@ -48,6 +47,8 @@ export default function MainPage() {
   const [confirmMessage, setconfirmMessage] = useState("");
 
   const [inputHeight, setInputHeight] = useState(40);
+  const [index, setIndex] = useState(0);
+  const [worksheetLength, setWorksheetLength] = useState(0);
   const maxHeight = 200;
 
   const openModal = () => setModalVisible(true);
@@ -89,9 +90,11 @@ export default function MainPage() {
           (parseInt(parsedRes[parsedRes.length - 1].takeNo) + 1).toString()
         );
         setSubstance(parsedRes[parsedRes.length - 1].substance);
+        setIndex(parsedRes.length);
+        setWorksheetLength(parsedRes.length);
       }
     });
-  }, []);
+  }, [context.projectKey]);
 
   function clearFields() {
     setTakeNo((parseInt(takeNo) + 1).toString());
@@ -106,6 +109,7 @@ export default function MainPage() {
     if (Platform.OS != "web") {
       Keyboard.dismiss();
     }
+    subListClose();
     closeModal();
   }
 
@@ -123,7 +127,7 @@ export default function MainPage() {
     if (
       takeNo != "" &&
       elementName != "" &&
-      (pid != "" || fid != "") &&
+      (pid != "" || fid != "" || !context.projectWorkType) &&
       buttonTitle != "Wybierz element" &&
       photos.length > 0 &&
       substance != ""
@@ -135,7 +139,9 @@ export default function MainPage() {
           (photos.length == 0 ? "Zdjęcie\n" : "") +
           (takeNo == "" ? "Numer Ujęcia\n" : "") +
           (elementName == "" ? "Symbol lub nazwa elementu instalacji\n" : "") +
-          (pid == "" && fid == "" ? "PID lub FID\n" : "") +
+          (pid == "" && fid == "" && context.projectWorkType
+            ? "PID lub FID\n"
+            : "") +
           (buttonTitle == "Wybierz element" ? "Element\n" : "") +
           (substance == "" ? "Substancja\n" : "")
       );
@@ -154,7 +160,16 @@ export default function MainPage() {
     navigate("/");
   };
 
-  const addToJson = () => {
+  const viewDataPreview = () => {
+    navigate("/DataPreview");
+  };
+
+  const changePoint = (ind) => {
+    setIndex(ind);
+    console.debug(ind, worksheetLength);
+  };
+
+  const addToJson = async () => {
     pid != "" ? pid : 0;
     fid != "" ? fid : 0;
     dateString =
@@ -169,92 +184,74 @@ export default function MainPage() {
       (context.date.minute < 10
         ? "0" + context.date.minute
         : context.date.minute);
-    const newRow = {
-      takeNo,
-      elementName,
-      dateString,
-      buttonTitle,
-      substance,
-      pid,
-      fid,
-    };
-    context.addRecord(newRow);
-    if (photos.length > 0) {
-      try {
-        if (photos.length == 1) {
-          savePhoto(photos[0], "");
-        } else {
-          let i = 0;
-          photos.forEach((photo) => {
-            i += 1;
-            savePhoto(photo, "_" + i.toString());
-          });
+    const newRow = context.projectWorkType
+      ? {
+          takeNo,
+          elementName,
+          dateString,
+          buttonTitle,
+          substance,
         }
-      } catch (e) {
-        alert("Błąd w zapisie zdjęcia");
-        console.error(e);
+      : {
+          takeNo,
+          elementName,
+          dateString,
+          buttonTitle,
+          substance,
+          pid,
+          fid,
+        };
+    context.addRecord(newRow);
+    try {
+      if (photos.length == 1) {
+        await savePhoto(photos[0], "");
+      } else {
+        let i = 0;
+        photos.forEach(async (photo) => {
+          i += 1;
+          await savePhoto(photo, "_" + i.toString());
+        });
       }
+    } catch (e) {
+      alert("Błąd w zapisie zdjęcia " + e);
+      console.error(e);
     }
+    setWorksheetLength(worksheetLength + 1);
     clearFields();
   };
 
-  const handleReadAndWriteExcel = async () => {
-    const ws = XLSX.utils.json_to_sheet(context.worksheetJson);
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Test");
-
-    const wbout = XLSX.write(wb, {
-      type: "base64",
-      bookType: "xlsx",
-    });
-    const uri = `${FileSystem.cacheDirectory}output.xlsx`;
-
-    try {
-      await FileSystem.writeAsStringAsync(uri, wbout, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      await saveXLSXFile(uri);
-      alert("Plik został zapisany");
-    } catch (e) {
-      alert("Błąd w zapisie pliku");
-      console.error(e);
-    }
-  };
-
-  saveXLSXFile = async (fileUri) => {
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status === "granted") {
-      const asset = await MediaLibrary.createAssetAsync(fileUri);
-      await MediaLibrary.createAlbumAsync(
-        `../Projekty/${context.projectName}`,
-        asset,
-        false
-      );
-    } else alert("We need you permission to save this file.");
-  };
-
   savePhoto = async (fileUri, fileNo) => {
+    console.debug("Saving photo", context.projectName);
     const { status } = await MediaLibrary.requestPermissionsAsync();
     if (status === "granted") {
-      const newUri = `${FileSystem.documentDirectory}${takeNo}${fileNo}.jpg`;
+      const dcimDir = `${FileSystem.documentDirectory}DCIM/`;
+      const projectDir = `${dcimDir}${context.projectName}/`;
+      const newUri = `${projectDir}${takeNo}${fileNo}_${context.date.year}${
+        context.date.month + 1
+      }${context.date.day}.jpg`;
+      const projectDirInfo = await FileSystem.getInfoAsync(projectDir);
+      if (!projectDirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(projectDir, {
+          intermediates: true,
+        });
+      }
       await FileSystem.moveAsync({
         from: fileUri,
         to: newUri,
       });
+
       const asset = await MediaLibrary.createAssetAsync(newUri);
-      await MediaLibrary.deleteAssetsAsync([fileUri]);
-      const album = await MediaLibrary.getAlbumAsync(`${context.projectName}`);
+      console.debug("Asset created", JSON.stringify(asset));
+      let album = await MediaLibrary.getAlbumAsync(context.projectName);
       if (album == null) {
-        await MediaLibrary.createAlbumAsync(
-          `${context.projectName}`,
-          asset,
-          false
-        );
+        await MediaLibrary.createAlbumAsync(context.projectName, asset, true);
       } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        await MediaLibrary.addAssetsToAlbumAsync([asset], album, true);
       }
-    } else alert("We need you permission to save this file.");
+      //await MediaLibrary.deleteAssetsAsync([asset.id]);
+    } else {
+      alert("We need your permission to save this file.");
+    }
   };
 
   return (
@@ -264,13 +261,18 @@ export default function MainPage() {
           <View style={styles.topLeftView}>
             <View style={styles.title.view}>
               <View style={styles.title.row}>
-                <TouchableOpacity onPress={confirmBackButton}>
-                  <Icon
-                    name={"angle-left"}
-                    size={25}
-                    color={"hsl(0, 0%, 96%)"}
-                    style={styles.title.leftIcon}
-                  />
+                <TouchableOpacity
+                  style={{ width: 50, backgroundColor: "hsl(240, 16%, 18%)" }}
+                  onPress={confirmBackButton}
+                >
+                  <View>
+                    <Icon
+                      name={"angle-left"}
+                      size={25}
+                      color={"hsl(0, 0%, 96%)"}
+                      style={styles.title.leftIcon}
+                    />
+                  </View>
                 </TouchableOpacity>
                 <Confirm
                   visible={confirmBack}
@@ -278,7 +280,14 @@ export default function MainPage() {
                   displayText={confirmMessage}
                   confirmFunction={confirmBackTrue}
                 />
-                <Text style={styles.title.text}>{context.projectName}</Text>
+                {context.projectName.length > 21 && (
+                  <Text style={styles.title.text}>
+                    {context.projectName.substring(0, 16) + "..."}
+                  </Text>
+                )}
+                {context.projectName.length <= 21 && (
+                  <Text style={styles.title.text}>{context.projectName}</Text>
+                )}
               </View>
 
               <View style={styles.title.row}>
@@ -430,53 +439,84 @@ export default function MainPage() {
                 initialTitle={buttonTitle}
               />
             </View>
-            <View>
-              <Text style={styles.text}>Stężenie</Text>
-              <View style={{ flexDirection: "row" }}>
-                <Text style={styles.textCentered}>PID</Text>
-                <TextInput
-                  style={styles.inputNarr}
-                  autoCorrect={false}
-                  enterKeyHint={"next"}
-                  inputMode={"decimal"}
-                  value={pid}
-                  onChangeText={(newValue) => setpid(newValue)}
-                />
-                <Text style={styles.textCentered}>ppm</Text>
+
+            {context.projectWorkType && (
+              <View>
+                <Text style={styles.text}>Stężenie</Text>
+                <View style={{ flexDirection: "row" }}>
+                  <Text style={styles.textCentered}>PID</Text>
+                  <TextInput
+                    style={styles.inputNarr}
+                    autoCorrect={false}
+                    enterKeyHint={"next"}
+                    inputMode={"decimal"}
+                    value={pid}
+                    onChangeText={(newValue) => setpid(newValue)}
+                  />
+                  <Text style={styles.textCentered}>ppm</Text>
+                </View>
+                <View style={{ flexDirection: "row" }}>
+                  <Text style={styles.textCentered}>FID</Text>
+                  <TextInput
+                    style={styles.inputNarr}
+                    autoCorrect={false}
+                    enterKeyHint={"next"}
+                    inputMode={"decimal"}
+                    value={fid}
+                    onChangeText={(newValue) => setfid(newValue)}
+                  />
+                  <Text style={styles.textCentered}>ppm</Text>
+                </View>
               </View>
-              <View style={{ flexDirection: "row" }}>
-                <Text style={styles.textCentered}>FID</Text>
-                <TextInput
-                  style={styles.inputNarr}
-                  autoCorrect={false}
-                  enterKeyHint={"next"}
-                  inputMode={"decimal"}
-                  value={fid}
-                  onChangeText={(newValue) => setfid(newValue)}
-                />
-                <Text style={styles.textCentered}>ppm</Text>
-              </View>
-            </View>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.button} onPress={checkFields}>
-                <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
-                  Dodaj
-                </Text>
-                <Confirm
-                  visible={confirmNotFullAdd}
-                  onClose={closeNotFullAdd}
-                  displayText={confirmMessage}
-                  confirmFunction={addToJson}
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.bottomComponent}>
+            )}
+
+            <View style={styles.doubleButtonContainer}>
               <TouchableOpacity
-                style={styles.button}
-                onPress={handleReadAndWriteExcel}
+                style={
+                  index == 0 ? styles.shortButtonDisabled : styles.shortButton
+                }
+                onPress={() => changePoint(index - 1)}
+                disabled={index == 0 ? true : false}
               >
                 <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
-                  Zapisz plik
+                  Poprzedni punkt
+                </Text>
+              </TouchableOpacity>
+              {index < worksheetLength && (
+                <TouchableOpacity
+                  style={styles.shortButton}
+                  onPress={() => changePoint(index + 1)}
+                >
+                  <Text
+                    style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}
+                  >
+                    Następny punkt
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {index >= worksheetLength && (
+                <TouchableOpacity
+                  style={styles.shortButton}
+                  onPress={checkFields}
+                >
+                  <Text
+                    style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}
+                  >
+                    Dodaj punkt
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <Confirm
+                visible={confirmNotFullAdd}
+                onClose={closeNotFullAdd}
+                displayText={confirmMessage}
+                confirmFunction={addToJson}
+              />
+            </View>
+            <View style={styles.bottomComponent}>
+              <TouchableOpacity style={styles.button} onPress={viewDataPreview}>
+                <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
+                  Przeglądaj dane
                 </Text>
               </TouchableOpacity>
             </View>
@@ -511,7 +551,6 @@ const styles = StyleSheet.create({
     text: {
       color: "hsl(0, 0%, 96%)",
       textAlign: "left",
-      marginLeft: 15,
       fontSize: 30,
     },
   },
@@ -519,6 +558,12 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingTop: 10,
     paddingLeft: 15,
+  },
+  doubleButtonContainer: {
+    paddingTop: 10,
+    paddingLeft: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   elementSelect: {
     zIndex: 10,
@@ -535,6 +580,26 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingLeft: 20,
     paddingRight: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  shortButton: {
+    width: (screenWidth - 50) / 2,
+    height: 40,
+    backgroundColor: "hsla(272, 53%, 67%, .5)",
+    border: "1px solid transparent",
+    borderRadius: 8,
+    marginRight: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  shortButtonDisabled: {
+    width: (screenWidth - 50) / 2,
+    height: 40,
+    backgroundColor: "hsla(272, 15%, 67%, .5)",
+    border: "1px solid transparent",
+    borderRadius: 8,
+    marginRight: 20,
     paddingTop: 8,
     paddingBottom: 8,
   },

@@ -6,29 +6,50 @@ import {
   Dimensions,
   TextInput,
   TouchableOpacity,
+  Text,
 } from "react-native";
 
+import { useState, useEffect } from "react";
 const { width: screenWidth } = Dimensions.get("window");
 
 export default function RenameProjectAction({
   visible,
   onClose,
-  currentName,
+  curritem,
   renameFunction,
 }) {
+  const [newName, setnewName] = useState("");
   const renameAction = () => {
-    renameFunction();
+    renameFunction(curritem.key, newName, curritem.type, curritem.workType);
     onClose();
   };
+
+  useEffect(() => {
+    setnewName("");
+  }, [visible]);
 
   return (
     <Modal transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={styles.wrapView}>
         <View style={styles.view}>
-          <TextInput></TextInput>
-          <TouchableOpacity>
-            <Text></Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TextInput
+              style={styles.inputWide}
+              placeholder={curritem.name}
+              placeholderTextColor={"hsl(0, 0%, 50%)"}
+              autoCorrect={false}
+              value={newName}
+              onChangeText={(newValue) => setnewName(newValue)}
+            />
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.button} onPress={renameAction}>
+              <Text style={{ color: "hsl(0, 0%, 96%)", textAlign: "center" }}>
+                {newName.length < 1 ? "Anuluj" : "Potwierdź"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -49,15 +70,21 @@ const styles = StyleSheet.create({
     color: "hsl(0, 0%, 96%)",
     border: "1px solid hsl(0, 0%, 96%)",
     borderRadius: 7.5,
-    backgroundColor: "hsl(240, 12%, 23%)",
+    backgroundColor: "hsl(240, 16%, 35%)",
   },
-  buttonView: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  text: {
+    color: "hsl(0, 0%, 96%)",
+    textAlign: "left",
+    marginLeft: 15,
+    marginTop: 10,
+  },
+  buttonContainer: {
+    paddingTop: 10,
+    paddingLeft: 15,
     paddingBottom: 10,
   },
   button: {
-    width: (screenWidth - 80) / 2,
+    width: screenWidth - 85,
     height: 40,
     backgroundColor: "hsla(272, 53%, 67%, .5)",
     border: "1px solid transparent",
@@ -65,11 +92,16 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     paddingRight: 20,
     paddingTop: 8,
+    paddingBottom: 8,
   },
-  text: {
+  inputWide: {
+    height: 50,
+    width: screenWidth - 85,
+    borderWidth: 1,
+    padding: 10,
     color: "hsl(0, 0%, 96%)",
-    textAlign: "left",
-    marginLeft: 15,
-    marginTop: 10,
+    border: "1px solid hsl(0, 0%, 96%)",
+    borderRadius: 7.5,
+    backgroundColor: "hsl(240, 12%, 23%)",
   },
 });

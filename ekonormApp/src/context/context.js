@@ -1,13 +1,14 @@
-import React, { createContext, useState, useEffect } from "react";
-import * as FileSystem from "expo-file-system";
+import React, { createContext } from "react";
 
-export const AppContext = React.createContext({
+export const AppContext = createContext({
   date: { year: 1990, month: 0, day: 0, hour: 12, minute: 0 },
   projectKey: "",
   projectName: "",
+  projectType: null,
+  projectWorkType: null,
   worksheetJson: [],
-  setProjectKey: (path) => void 0,
-  setProjectName: (path) => void 0,
+  permission: null,
+  setProjectData: (path) => void 0,
   addRecord: (data) => void 0,
   saveLoadedWorksheet: (data) => void 0,
 });

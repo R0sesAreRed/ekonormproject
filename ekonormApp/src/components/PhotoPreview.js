@@ -55,7 +55,6 @@ export default PhotoPreview = ({
       Image.getSize(photos[photoNo], (width, height) => {
         setIsLandscape(width > height); // Determine orientation
       });
-      console.debug(isLandscape);
     }
   }, [photoNo]);
 
@@ -102,7 +101,6 @@ export default PhotoPreview = ({
                       ? photoNo + 1
                       : photos.length - 1
                   );
-                  getPhotoOrientation();
                 }}
               >
                 {photoNo < photos.length - 1 && (

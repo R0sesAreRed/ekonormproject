@@ -8,14 +8,17 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 import { RadioButton, Provider as PaperProvider } from "react-native-paper";
-import { useState, useContext } from "react";
-import { AppContext } from "../context/context";
+import { useState } from "react";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const ReadioButtons = ({ visible, onClose, onChangeTitle, initialTitle }) => {
+const ProjectTypeSelect = ({
+  visible,
+  onClose,
+  onChangeTitle,
+  initialTitle,
+}) => {
   const [checked, setChecked] = useState(initialTitle);
-  const context = useContext(AppContext);
 
   const handleSave = () => {
     onChangeTitle(checked);
@@ -28,12 +31,7 @@ const ReadioButtons = ({ visible, onClose, onChangeTitle, initialTitle }) => {
 
   return (
     <PaperProvider>
-      <Modal
-        transparent={true}
-        visible={visible}
-        onRequestClose={onClose}
-        animationType="fade"
-      >
+      <Modal transparent={true} visible={visible} onRequestClose={onClose}>
         <TouchableWithoutFeedback
           style={styles.container}
           onPress={closeOnPressOut}
@@ -46,58 +44,18 @@ const ReadioButtons = ({ visible, onClose, onChangeTitle, initialTitle }) => {
                   value={checked}
                 >
                   <RadioButton.Item
-                    value="Zawór gaz"
-                    label="Zawór gaz"
+                    value="Przemysł chemiczny"
+                    label="Przemysł chemiczny"
                     style={styles.radioButtonContainer}
                     labelStyle={styles.radioButtonLabel}
                   />
 
                   <RadioButton.Item
-                    value="Zawór ciecz lekka"
-                    label="Zawór ciecz lekka"
+                    value="Przemysł petrochemiczny"
+                    label="Przemysł petrochemiczny"
                     style={styles.radioButtonContainer}
                     labelStyle={styles.radioButtonLabel}
                   />
-
-                  <RadioButton.Item
-                    value="Uszczelnienie pompy, sprężarek, mieszalników, zawory upustowe"
-                    label="Uszczelnienie pompy, sprężarek, mieszalników, zawory upustowe"
-                    style={styles.radioButtonContainer}
-                    labelStyle={styles.radioButtonLabel}
-                  />
-
-                  <RadioButton.Item
-                    value="Złącze, przewody otwarte"
-                    label="Złącze, przewody otwarte"
-                    style={styles.radioButtonContainer}
-                    labelStyle={styles.radioButtonLabel}
-                  />
-                  {!context.projectType && (
-                    <RadioButton.Item
-                      value="Uszczelnienie sprężarki gaz"
-                      label="Uszczelnienie sprężarki gaz"
-                      style={styles.radioButtonContainer}
-                      labelStyle={styles.radioButtonLabel}
-                    />
-                  )}
-
-                  {!context.projectType && (
-                    <RadioButton.Item
-                      value="Zawory upustowe gaz"
-                      label="Zawory upustowe gaz"
-                      style={styles.radioButtonContainer}
-                      labelStyle={styles.radioButtonLabel}
-                    />
-                  )}
-
-                  {!context.projectType && (
-                    <RadioButton.Item
-                      value="Przewody otwarte wszystkie obsługi"
-                      label="Przewody otwarte wszystkie obsługi"
-                      style={styles.radioButtonContainer}
-                      labelStyle={styles.radioButtonLabel}
-                    />
-                  )}
                 </RadioButton.Group>
                 <View>
                   <Button title="Zapisz" onPress={handleSave}></Button>
@@ -160,4 +118,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ReadioButtons;
+export default ProjectTypeSelect;

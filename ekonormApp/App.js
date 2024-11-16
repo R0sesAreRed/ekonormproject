@@ -4,6 +4,7 @@ import { AppContext } from "./src/context/context";
 import { useEffect, useState } from "react";
 import MainPage from "./src/pages/MainPage";
 import CreateProjectPage from "./src/pages/CreateProjectPage";
+import DataPreview from "./src/pages/DataPreview";
 import { persistWorksheet } from "./src/utils/dataStorage";
 import * as MediaLibrary from "expo-media-library";
 
@@ -12,9 +13,19 @@ export default function App() {
     date: { year: 1990, month: 0, day: 0, hour: 12, minute: 0 },
   });
   const [worksheet, setWorksheet] = useState({ worksheetJson: [] });
-  const [projectKey, newProjectKey] = useState({ key: "" });
-  const [projectName, newProjectName] = useState({ name: "" });
+  // const [projectKey, newProjectKey] = useState({ key: "" });
+  // const [projectName, newProjectName] = useState({ name: "" });
+  // const [projectType, newProjectType] = useState({ type: null });
+  const [projectData, newProjectData] = useState({
+    key: "",
+    name: "",
+    type: null,
+    workType: null,
+  });
+  const [hasMediaLibraryPermission, setHasMediaLibraryPermission] =
+    useState(false);
   useEffect(() => {
+    requestPermissions();
     const interval = setInterval(() => {
       const newDate = new Date();
       setAppData({
@@ -31,14 +42,19 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  const requestPermissions = async () => {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    setHasMediaLibraryPermission(status === "granted");
+  };
+
   const addRecord = (data) => {
-    if (projectKey.key.length > 0) {
+    if (projectData.key.length > 0) {
       const newJson = worksheet.worksheetJson.concat(data);
       setWorksheet({
         ...worksheet,
         worksheetJson: newJson,
       });
-      persistWorksheet(projectKey.key, newJson);
+      persistWorksheet(projectData.key, newJson);
     }
   };
   const saveLoadedWorksheet = (data) => {
@@ -46,23 +62,38 @@ export default function App() {
       worksheetJson: data,
     });
   };
-  const setProjectKey = (data) => {
-    const key = data.toString();
-    newProjectKey({ key: key });
-  };
-  const setProjectName = (data) => {
-    const name = data.toString();
-    newProjectName({ name: name });
+  // const setProjectKey = (data) => {
+  //   const key = data.toString();
+  //   newProjectKey({ key: key });
+  // };
+  // const setProjectName = (data) => {
+  //   const name = data.toString();
+  //   newProjectName({ name: name });
+  // };
+
+  // const setProjectType = (data) => {
+  //   const type = data;
+  //   newProjectType({ type: type });
+  // };
+  const setProjectData = (data) => {
+    newProjectData({
+      key: data.key,
+      name: data.name,
+      type: data.type,
+      workType: data.workType,
+    });
   };
   return (
     <AppContext.Provider
       value={{
         date: currentDateTime.date,
         worksheetJson: worksheet.worksheetJson,
-        projectKey: projectKey.key,
-        projectName: projectName.name,
-        setProjectKey,
-        setProjectName,
+        projectKey: projectData.keyKey,
+        projectName: projectData.name,
+        projectType: projectData.type,
+        projectWorkType: projectData.workType,
+        permission: hasMediaLibraryPermission,
+        setProjectData,
         addRecord,
         saveLoadedWorksheet,
       }}
@@ -81,6 +112,7 @@ export default function App() {
         <Routes>
           <Route path={"/"} element={<CreateProjectPage />} />
           <Route path={"/MainPage"} element={<MainPage />} />
+          <Route path={"/DataPreview"} element={<DataPreview />} />
         </Routes>
       </NativeRouter>
     </AppContext.Provider>
