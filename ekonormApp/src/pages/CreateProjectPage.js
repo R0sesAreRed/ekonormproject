@@ -140,7 +140,7 @@ export default function CreateProjectPage() {
   };
 
   const selectProject = (data) => {
-    context.setProjectData(data);
+    context.setProjectData(data.key, data.name, data.type, data.workType);
     navigate("/MainPage");
   };
 

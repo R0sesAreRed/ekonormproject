@@ -43,13 +43,13 @@ export default function DataPreview() {
     newData[index][field] = text;
     setData(newData);
   };
-  //const obj = JSON.parse(JSON.stringify(data));
+
   const back = () => {
     context.saveLoadedWorksheet(data);
     persistWorksheet(context.projectKey, data);
     setTimeout(() => {
       navigate("/MainPage");
-    }, 100); // Add a small delay before navigation
+    }, 100);
   };
 
   const handleReadAndWriteExcel = async () => {
@@ -57,18 +57,18 @@ export default function DataPreview() {
     const wb = XLSX.utils.book_new();
 
     XLSX.utils.book_append_sheet(wb, ws, "Test");
-
     const wbout = XLSX.write(wb, {
       type: "base64",
       bookType: "xlsx",
     });
     const uri = `${FileSystem.cacheDirectory}output.xlsx`;
-
     try {
       await FileSystem.writeAsStringAsync(uri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
+
       await saveXLSXFile(uri);
+
       alert("Plik został zapisany");
     } catch (e) {
       alert("Błąd w zapisie pliku");
@@ -77,14 +77,19 @@ export default function DataPreview() {
   };
 
   saveXLSXFile = async (fileUri) => {
+    console.debug("a");
     const { status } = await MediaLibrary.requestPermissionsAsync();
+    console.debug("b");
     if (status === "granted") {
+      console.debug("c");
       const asset = await MediaLibrary.createAssetAsync(fileUri);
+      console.debug("d");
       await MediaLibrary.createAlbumAsync(
         `../Projekty/${context.projectName}`,
         asset,
         false
       );
+      console.debug("e");
     } else alert("We need you permission to save this file.");
   };
 
@@ -146,19 +151,23 @@ export default function DataPreview() {
                   }
                 />
 
-                <TextInput
-                  value={item.pid}
-                  style={[styles.inputNarr, { width: 300 }]}
-                  placeholder="Pid"
-                  onChangeText={(text) => handleChange(text, index, "pid")}
-                />
+                {context.projectWorkType && (
+                  <TextInput
+                    value={item.pid}
+                    style={[styles.inputNarr, { width: 300 }]}
+                    placeholder="Pid"
+                    onChangeText={(text) => handleChange(text, index, "pid")}
+                  />
+                )}
 
-                <TextInput
-                  value={item.fid}
-                  style={[styles.inputNarr, { width: 300 }]}
-                  placeholder="Fid"
-                  onChangeText={(text) => handleChange(text, index, "fid")}
-                />
+                {context.projectWorkType && (
+                  <TextInput
+                    value={item.fid}
+                    style={[styles.inputNarr, { width: 300 }]}
+                    placeholder="Fid"
+                    onChangeText={(text) => handleChange(text, index, "fid")}
+                  />
+                )}
               </View>
             ))}
           </View>

@@ -3,7 +3,7 @@
     "name": "ekonormApp",
     "slug": "ekonormapp",
     "version": "1.0.1",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "light",
@@ -27,6 +27,16 @@
         "android.permissions.MANAGE_EXTERNAL_STORAGE"
       ]
     },
+    "plugins": [
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ],
     "web": {
       "favicon": "./src/assets/favicon.png"
     },

@@ -22,6 +22,7 @@ const getData = async (key) => {
 };
 
 export function persistWorksheet(key, curr) {
+  console.debug("Persisting worksheet", curr);
   storeData("WSHT_" + key, JSON.stringify(curr));
 }
 

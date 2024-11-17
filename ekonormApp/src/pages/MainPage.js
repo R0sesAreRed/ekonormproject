@@ -17,7 +17,7 @@ import { useContext, useState, useEffect } from "react";
 import ReadioButtons from "../components/RadioButtons";
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
-import { loadWorksheet } from "../utils/dataStorage";
+import { loadWorksheet, seeAll } from "../utils/dataStorage";
 import SubstanceSelect from "../components/SubstanceSelect";
 import { useNavigate } from "react-router-native";
 import CameraModal from "../components/CameraModal";
@@ -82,6 +82,7 @@ export default function MainPage() {
   };
 
   useEffect(() => {
+    seeAll();
     loadWorksheet(context.projectKey).then((res) => {
       let parsedRes = res ? JSON.parse(res) : [];
       context.saveLoadedWorksheet(parsedRes);
@@ -220,35 +221,56 @@ export default function MainPage() {
     clearFields();
   };
 
-  savePhoto = async (fileUri, fileNo) => {
+  const savePhoto = async (fileUri, fileNo) => {
     console.debug("Saving photo", context.projectName);
     const { status } = await MediaLibrary.requestPermissionsAsync();
     if (status === "granted") {
-      const dcimDir = `${FileSystem.documentDirectory}DCIM/`;
-      const projectDir = `${dcimDir}${context.projectName}/`;
-      const newUri = `${projectDir}${takeNo}${fileNo}_${context.date.year}${
-        context.date.month + 1
-      }${context.date.day}.jpg`;
-      const projectDirInfo = await FileSystem.getInfoAsync(projectDir);
-      if (!projectDirInfo.exists) {
-        await FileSystem.makeDirectoryAsync(projectDir, {
-          intermediates: true,
-        });
-      }
-      await FileSystem.moveAsync({
-        from: fileUri,
-        to: newUri,
-      });
+      try {
+        const dcimDir = `${FileSystem.documentDirectory}DCIM/`;
+        const projectDir = `${dcimDir}${context.projectName}/`;
+        const newUri = `${projectDir}${takeNo}${fileNo}_${context.date.year}${
+          context.date.month + 1
+        }${context.date.day}.jpg`;
 
-      const asset = await MediaLibrary.createAssetAsync(newUri);
-      console.debug("Asset created", JSON.stringify(asset));
-      let album = await MediaLibrary.getAlbumAsync(context.projectName);
-      if (album == null) {
-        await MediaLibrary.createAlbumAsync(context.projectName, asset, true);
-      } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, true);
+        console.debug("Project directory:", projectDir);
+        console.debug("New URI:", newUri);
+
+        // Check if the DCIM directory exists
+        const dcimDirInfo = await FileSystem.getInfoAsync(dcimDir);
+        if (!dcimDirInfo.exists) {
+          console.debug("DCIM directory does not exist, creating...");
+          await FileSystem.makeDirectoryAsync(dcimDir, { intermediates: true });
+        }
+
+        // Check if the project directory exists
+        const projectDirInfo = await FileSystem.getInfoAsync(projectDir);
+        if (!projectDirInfo.exists) {
+          console.debug("Project directory does not exist, creating...");
+          await FileSystem.makeDirectoryAsync(projectDir, {
+            intermediates: true,
+          });
+        }
+
+        // Move the file to the new URI
+        await FileSystem.moveAsync({
+          from: fileUri,
+          to: newUri,
+        });
+
+        // Create an asset and add it to the media library
+        const asset = await MediaLibrary.createAssetAsync(newUri);
+        console.debug("Asset created", JSON.stringify(asset));
+        let album = await MediaLibrary.getAlbumAsync(context.projectName);
+        if (album == null) {
+          console.debug("Album does not exist, creating...");
+          await MediaLibrary.createAlbumAsync(context.projectName, asset, true);
+        } else {
+          console.debug("Adding asset to existing album...");
+          await MediaLibrary.addAssetsToAlbumAsync(asset, album, true);
+        }
+      } catch (error) {
+        console.error("Error saving photo:", error);
       }
-      //await MediaLibrary.deleteAssetsAsync([asset.id]);
     } else {
       alert("We need your permission to save this file.");
     }

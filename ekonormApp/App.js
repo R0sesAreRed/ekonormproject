@@ -13,9 +13,6 @@ export default function App() {
     date: { year: 1990, month: 0, day: 0, hour: 12, minute: 0 },
   });
   const [worksheet, setWorksheet] = useState({ worksheetJson: [] });
-  // const [projectKey, newProjectKey] = useState({ key: "" });
-  // const [projectName, newProjectName] = useState({ name: "" });
-  // const [projectType, newProjectType] = useState({ type: null });
   const [projectData, newProjectData] = useState({
     key: "",
     name: "",
@@ -75,12 +72,21 @@ export default function App() {
   //   const type = data;
   //   newProjectType({ type: type });
   // };
-  const setProjectData = (data) => {
+  const setProjectData = (
+    projectKey,
+    projectName,
+    projectType,
+    projectWorkType
+  ) => {
+    const key = projectKey.toString();
+    const name = projectName.toString();
+    const type = projectType;
+    const workType = projectWorkType;
     newProjectData({
-      key: data.key,
-      name: data.name,
-      type: data.type,
-      workType: data.workType,
+      key: key,
+      name: name,
+      type: type,
+      workType: workType,
     });
   };
   return (
@@ -88,7 +94,7 @@ export default function App() {
       value={{
         date: currentDateTime.date,
         worksheetJson: worksheet.worksheetJson,
-        projectKey: projectData.keyKey,
+        projectKey: projectData.key,
         projectName: projectData.name,
         projectType: projectData.type,
         projectWorkType: projectData.workType,
