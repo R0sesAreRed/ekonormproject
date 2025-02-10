@@ -24,18 +24,22 @@ export default PhotoPreview = ({
   setPhotoNo,
 }) => {
   const [isLandscape, setIsLandscape] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
   removePhoto = async () => {
     try {
-      await FileSystem.deleteAsync(photos[photoNo]);
+      //console.debug("delete", photos[photoNo].uri);
+      await FileSystem.deleteAsync(photos[photoNo].uri.toString());
       setPhotos((photos) => {
         return photos.filter((_, i) => i !== photoNo);
       });
       if (photos.length > 0) {
         if (photoNo == photos.length - 1) {
+          //console.debug("deleting last photo");
           setPhotoNo(photoNo - 1);
         }
         if (photos.length == 1) {
+          //console.debug("deleting first photo");
           onClose();
         }
       }
@@ -50,35 +54,45 @@ export default PhotoPreview = ({
     }
   }, [photos]);
 
-  useEffect(() => {
-    if (photos.length > 0) {
-      Image.getSize(photos[photoNo], (width, height) => {
-        setIsLandscape(width > height); // Determine orientation
-      });
-    }
-  }, [photoNo]);
+  // useEffect(() => {
+  //   //console.debug("photoNo changed");
+  //   if (photos.length > 0) {
+  //     //console.debug("photos.length > 0");
+  //     const photo = photos[photoNo];
+  //     setIsLandscape(photo?.exif?.width > photo?.exif?.height);
+  //     // console.debug(
+  //     //   "isLandscape",
+  //     //   photo.exif?.width > photo.exif?.height,
+  //     //   photo.exif?.PixelXDimension,
+  //     //   photo.exif
+  //     // );
+  //   }
+  // }, [photoNo]);
 
   return (
     <Modal visible={visible} onRequestClose={onClose}>
       {visible && photos.length > 0 && (
         <View style={styles.modalContent}>
           <ImageBackground
-            source={{ uri: photos[photoNo] }}
-            style={styles.photo}
-            imageStyle={[styles.imageStyle, isLandscape && styles.rotatedImage]}
+            source={{ uri: photos[photoNo]?.uri }}
+            style={[
+              styles.photo,
+              //isLandscape ? styles.horizontalPhoto : styles.verticalPhoto,
+            ]}
+            imageStyle={styles.imageStyle}
           >
             <View style={styles.buttonContainerTop}>
               <TouchableOpacity
                 style={styles.button.left}
                 onPress={() => onClose()}
               >
-                <Icon name={"check"} size={30} color="white"></Icon>
+                <Icon name={"check"} size={30} color="red"></Icon>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.button.right}
                 onPress={() => removePhoto()}
               >
-                <Icon name={"trash"} size={30} color="white"></Icon>
+                <Icon name={"trash"} size={30} color="red"></Icon>
               </TouchableOpacity>
             </View>
             <View style={styles.buttonContainerBottom}>
@@ -89,7 +103,7 @@ export default PhotoPreview = ({
                 }}
               >
                 {photoNo > 0 && (
-                  <Icon name={"angle-left"} size={30} color="white"></Icon>
+                  <Icon name={"angle-left"} size={30} color="red"></Icon>
                 )}
               </TouchableOpacity>
 
@@ -104,7 +118,7 @@ export default PhotoPreview = ({
                 }}
               >
                 {photoNo < photos.length - 1 && (
-                  <Icon name={"angle-right"} size={30} color="white"></Icon>
+                  <Icon name={"angle-right"} size={30} color="red"></Icon>
                 )}
               </TouchableOpacity>
             </View>
@@ -140,10 +154,12 @@ const styles = StyleSheet.create({
     top: 20,
   },
   imageStyle: {
-    resizeMode: "cover",
+    resizeMode: "contain",
+    backgroundColor: "black",
+    //transform: [{ rotate: "-90deg" }],
   },
   rotatedImage: {
-    transform: [{ rotate: "90deg" }],
+    transform: [{ rotate: "-90deg" }],
   },
   button: {
     center: {
@@ -160,5 +176,14 @@ const styles = StyleSheet.create({
       alignItems: "flex-end",
       marginRight: 10,
     },
+  },
+  horizontalPhoto: {
+    width: "100%",
+    height: "50%", // Adjust the height to display as a strip in the middle
+    alignSelf: "center",
+  },
+  verticalPhoto: {
+    width: "100%",
+    height: "100%",
   },
 });

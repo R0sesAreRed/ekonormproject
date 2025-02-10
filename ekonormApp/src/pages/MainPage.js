@@ -17,7 +17,7 @@ import { useContext, useState, useEffect } from "react";
 import ReadioButtons from "../components/RadioButtons";
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
-import { loadWorksheet, seeAll } from "../utils/dataStorage";
+import { loadWorksheet, persistWorksheet } from "../utils/dataStorage";
 import SubstanceSelect from "../components/SubstanceSelect";
 import { useNavigate } from "react-router-native";
 import CameraModal from "../components/CameraModal";
@@ -33,7 +33,7 @@ export default function MainPage() {
   const [subListVisible, setsubListVisible] = useState(false);
   const [cameraVisible, setCameraVisible] = useState(false);
   const [prewievVisible, setPrewievVisible] = useState(false);
-  const [buttonTitle, setButtonTitle] = useState("Wybierz element");
+  const [buttonTitle, setButtonTitle] = useState("Wybierz typ elementu");
   const [takeNo, setTakeNo] = useState("1");
   const [elementName, setElementName] = useState("");
   const [substance, setSubstance] = useState("");
@@ -45,10 +45,15 @@ export default function MainPage() {
   const [confirmNotFullAdd, setconfirmNotFullAdd] = useState(false);
   const [confirmBack, setconfirmBack] = useState(false);
   const [confirmMessage, setconfirmMessage] = useState("");
+  const [currProjectWorkType, setCurrProjectWorkType] = useState("");
 
   const [inputHeight, setInputHeight] = useState(40);
   const [index, setIndex] = useState(0);
   const [worksheetLength, setWorksheetLength] = useState(0);
+  const [editedPrev, setEditedPrev] = useState(false);
+
+  const [maxTitleLength, setMaxTitleLength] = useState(0);
+
   const maxHeight = 200;
 
   const openModal = () => setModalVisible(true);
@@ -82,20 +87,27 @@ export default function MainPage() {
   };
 
   useEffect(() => {
-    seeAll();
     loadWorksheet(context.projectKey).then((res) => {
       let parsedRes = res ? JSON.parse(res) : [];
       context.saveLoadedWorksheet(parsedRes);
       if (parsedRes.length > 0) {
         setTakeNo(
-          (parseInt(parsedRes[parsedRes.length - 1].takeNo) + 1).toString()
+          (
+            parseInt(parsedRes[parsedRes.length - 1]["Numer punktu"]) + 1
+          ).toString()
         );
-        setSubstance(parsedRes[parsedRes.length - 1].substance);
+        setSubstance(parsedRes[parsedRes.length - 1].Substancja);
         setIndex(parsedRes.length);
         setWorksheetLength(parsedRes.length);
       }
     });
+    setMaxTitleLength(screenWidth / 25);
+    setCurrProjectWorkType(context.projectWorkType);
   }, [context.projectKey]);
+
+  useEffect(() => {
+    if (index <= worksheetLength) setEditedPrev(true);
+  }, [takeNo, elementName, pid, fid, buttonTitle, photos, substance]);
 
   function clearFields() {
     setTakeNo((parseInt(takeNo) + 1).toString());
@@ -128,7 +140,7 @@ export default function MainPage() {
     if (
       takeNo != "" &&
       elementName != "" &&
-      (pid != "" || fid != "" || !context.projectWorkType) &&
+      (pid != "" || fid != "" || !currProjectWorkType) &&
       buttonTitle != "Wybierz element" &&
       photos.length > 0 &&
       substance != ""
@@ -140,7 +152,7 @@ export default function MainPage() {
           (photos.length == 0 ? "Zdjęcie\n" : "") +
           (takeNo == "" ? "Numer Ujęcia\n" : "") +
           (elementName == "" ? "Symbol lub nazwa elementu instalacji\n" : "") +
-          (pid == "" && fid == "" && context.projectWorkType
+          (pid == "" && fid == "" && currProjectWorkType
             ? "PID lub FID\n"
             : "") +
           (buttonTitle == "Wybierz element" ? "Element\n" : "") +
@@ -165,9 +177,74 @@ export default function MainPage() {
     navigate("/DataPreview");
   };
 
-  const changePoint = (ind) => {
+  loadSavedPoint = (ind) => {
+    const prevRow = context.worksheetJson[ind];
+    setTakeNo(prevRow.takeNo.toString());
+    setElementName(prevRow.elementName);
+    setSubstance(prevRow.substance);
+    setpid(prevRow.pid);
+    setfid(prevRow.fid);
+    changeButtonTitle(prevRow.buttonTitle);
+    setPhotos([]);
+    setTimeout(() => {
+      setEditedPrev(false);
+    }, 100);
+  };
+
+  saveEditedPoint = async () => {
+    if (editedPrev) {
+      const newRow = !currProjectWorkType
+        ? {
+            "Numer punktu": takeNo,
+            "Symbol lub nazwa elementu instalacji": elementName,
+            Data: dateString,
+            "Typ elementu": buttonTitle,
+            Substancja: substance,
+          }
+        : {
+            "Numer punktu": takeNo,
+            "Symbol lub nazwa elementu instalacji": elementName,
+            Data: dateString,
+            "Typ elementu": buttonTitle,
+            Substancja: substance,
+            PID: pid,
+            FID: fid,
+          };
+      const newData = [...context.worksheetJson];
+      newData[index] = newRow;
+      context.saveLoadedWorksheet(newData);
+      persistWorksheet(context.projectKey, newData);
+
+      try {
+        if (photos.length == 1) {
+          await savePhoto(photos[0].uri, "");
+        } else {
+          let i = 0;
+          photos.forEach(async (photo) => {
+            i += 1;
+            await savePhoto(photo.uri, "_" + i.toString());
+          });
+        }
+      } catch (e) {
+        alert("Błąd w zapisie zdjęcia " + e);
+        console.error(e);
+      }
+    }
+  };
+
+  const changePoint = async (ind) => {
+    if (index == worksheetLength && ind < worksheetLength) {
+      loadSavedPoint(ind);
+    }
+    if (index < worksheetLength && ind < worksheetLength) {
+      loadSavedPoint(ind);
+      await saveEditedPoint();
+    }
+    if (ind == worksheetLength && index < worksheetLength) {
+      clearFields();
+      await saveEditedPoint();
+    }
     setIndex(ind);
-    console.debug(ind, worksheetLength);
   };
 
   const addToJson = async () => {
@@ -185,32 +262,32 @@ export default function MainPage() {
       (context.date.minute < 10
         ? "0" + context.date.minute
         : context.date.minute);
-    const newRow = context.projectWorkType
+    const newRow = !currProjectWorkType
       ? {
-          takeNo,
-          elementName,
-          dateString,
-          buttonTitle,
-          substance,
+          "Numer punktu": takeNo,
+          "Symbol lub nazwa elementu instalacji": elementName,
+          Data: dateString,
+          "Typ elementu": buttonTitle,
+          Substancja: substance,
         }
       : {
-          takeNo,
-          elementName,
-          dateString,
-          buttonTitle,
-          substance,
-          pid,
-          fid,
+          "Numer punktu": takeNo,
+          "Symbol lub nazwa elementu instalacji": elementName,
+          Data: dateString,
+          "Typ elementu": buttonTitle,
+          Substancja: substance,
+          PID: pid,
+          FID: fid,
         };
     context.addRecord(newRow);
     try {
       if (photos.length == 1) {
-        await savePhoto(photos[0], "");
+        await savePhoto(photos[0].uri, "");
       } else {
         let i = 0;
         photos.forEach(async (photo) => {
           i += 1;
-          await savePhoto(photo, "_" + i.toString());
+          await savePhoto(photo.uri, "_" + i.toString());
         });
       }
     } catch (e) {
@@ -219,33 +296,39 @@ export default function MainPage() {
     }
     setWorksheetLength(worksheetLength + 1);
     clearFields();
+    setIndex(index + 1);
   };
 
   const savePhoto = async (fileUri, fileNo) => {
-    console.debug("Saving photo", context.projectName);
+    console.debug("fileUri", fileUri);
     const { status } = await MediaLibrary.requestPermissionsAsync();
     if (status === "granted") {
       try {
         const dcimDir = `${FileSystem.documentDirectory}DCIM/`;
         const projectDir = `${dcimDir}${context.projectName}/`;
-        const newUri = `${projectDir}${takeNo}${fileNo}_${context.date.year}${
-          context.date.month + 1
-        }${context.date.day}.jpg`;
-
-        console.debug("Project directory:", projectDir);
-        console.debug("New URI:", newUri);
+        const takeNoWith0 =
+          takeNo.length == 1
+            ? "00" + takeNo
+            : takeNo.length == 2
+            ? "0" + takeNo
+            : takeNo;
+        console.debug("takeNoWith0", takeNoWith0);
+        const newUri = `${projectDir}${takeNoWith0}${fileNo}_${
+          context.date.year
+        }_${context.date.month.length == 1 ? "0" : ""}${context.date.month + 1}
+        _${context.date.day.length == 1 ? "0" : ""}${context.date.day}_${
+          context.date.hour
+        }_${context.date.minute}.jpg`;
 
         // Check if the DCIM directory exists
         const dcimDirInfo = await FileSystem.getInfoAsync(dcimDir);
         if (!dcimDirInfo.exists) {
-          console.debug("DCIM directory does not exist, creating...");
           await FileSystem.makeDirectoryAsync(dcimDir, { intermediates: true });
         }
 
         // Check if the project directory exists
         const projectDirInfo = await FileSystem.getInfoAsync(projectDir);
         if (!projectDirInfo.exists) {
-          console.debug("Project directory does not exist, creating...");
           await FileSystem.makeDirectoryAsync(projectDir, {
             intermediates: true,
           });
@@ -259,13 +342,10 @@ export default function MainPage() {
 
         // Create an asset and add it to the media library
         const asset = await MediaLibrary.createAssetAsync(newUri);
-        console.debug("Asset created", JSON.stringify(asset));
         let album = await MediaLibrary.getAlbumAsync(context.projectName);
         if (album == null) {
-          console.debug("Album does not exist, creating...");
           await MediaLibrary.createAlbumAsync(context.projectName, asset, true);
         } else {
-          console.debug("Adding asset to existing album...");
           await MediaLibrary.addAssetsToAlbumAsync(asset, album, true);
         }
       } catch (error) {
@@ -277,14 +357,22 @@ export default function MainPage() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={
+        index >= worksheetLength ? styles.container : styles.containerEdit
+      }
+    >
       <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
         <View>
           <View style={styles.topLeftView}>
             <View style={styles.title.view}>
               <View style={styles.title.row}>
                 <TouchableOpacity
-                  style={{ width: 50, backgroundColor: "hsl(240, 16%, 18%)" }}
+                  style={
+                    index >= worksheetLength
+                      ? { width: 50, backgroundColor: "hsl(240, 16%, 18%)" }
+                      : { width: 50, backgroundColor: "hsl(240, 30%, 18%)" }
+                  }
                   onPress={confirmBackButton}
                 >
                   <View>
@@ -302,9 +390,10 @@ export default function MainPage() {
                   displayText={confirmMessage}
                   confirmFunction={confirmBackTrue}
                 />
-                {context.projectName.length > 21 && (
+                {context.projectName.length > maxTitleLength && (
                   <Text style={styles.title.text}>
-                    {context.projectName.substring(0, 16) + "..."}
+                    {context.projectName.substring(0, maxTitleLength - 5) +
+                      "..."}
                   </Text>
                 )}
                 {context.projectName.length <= 21 && (
@@ -361,9 +450,9 @@ export default function MainPage() {
               />
             </View>
             <View>
-              <Text style={styles.text}>Numer Ujęcia</Text>
+              <Text style={styles.text}>Numer punktu</Text>
               <TextInput
-                style={styles.inputNarr}
+                style={styles.inputNarrower}
                 autoCorrect={false}
                 enterKeyHint={"next"}
                 inputMode={"decimal"}
@@ -445,7 +534,7 @@ export default function MainPage() {
               />
             </View>
             <View>
-              <Text style={styles.text}>Element:</Text>
+              <Text style={styles.text}>Typ elementu:</Text>
               <TouchableOpacity
                 onPress={openModal}
                 style={styles.elementSelect}
@@ -462,7 +551,7 @@ export default function MainPage() {
               />
             </View>
 
-            {context.projectWorkType && (
+            {currProjectWorkType && (
               <View>
                 <Text style={styles.text}>Stężenie</Text>
                 <View style={{ flexDirection: "row" }}>
@@ -643,6 +732,18 @@ const styles = StyleSheet.create({
     borderRadius: 7.5,
     backgroundColor: "hsl(240, 12%, 23%)",
   },
+  inputNarrower: {
+    height: 50,
+    width: 100,
+    marginLeft: 15,
+    marginTop: 10,
+    borderWidth: 1,
+    padding: 10,
+    color: "hsl(0, 0%, 96%)",
+    border: "1px solid hsl(0, 0%, 96%)",
+    borderRadius: 7.5,
+    backgroundColor: "hsl(240, 12%, 23%)",
+  },
   inputWide: {
     height: 50,
     width: screenWidth - 30,
@@ -658,6 +759,10 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: "hsl(240, 16%, 18%)",
+  },
+  containerEdit: {
+    flexGrow: 1,
+    backgroundColor: "hsl(240, 30%, 18%)",
   },
   topLeftView: {
     //position: "absolute",

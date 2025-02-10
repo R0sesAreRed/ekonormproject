@@ -55,41 +55,44 @@ export default function DataPreview() {
   const handleReadAndWriteExcel = async () => {
     const ws = XLSX.utils.json_to_sheet(context.worksheetJson);
     const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Test");
+    XLSX.utils.book_append_sheet(
+      wb,
+      ws,
+      `${context.date.year}_${context.date.month + 1}_${context.date.day}`
+    );
     const wbout = XLSX.write(wb, {
       type: "base64",
       bookType: "xlsx",
     });
-    const uri = `${FileSystem.cacheDirectory}output.xlsx`;
+    const uri = `${FileSystem.cacheDirectory}${context.projectName}_${
+      context.date.year
+    }${context.date.month + 1}${context.date.day}${context.date.hour}${
+      context.date.minute
+    }.xlsx`;
     try {
-      await FileSystem.writeAsStringAsync(uri, wbout, {
+      const contents = await FileSystem.writeAsStringAsync(uri, wbout, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      console.debug(uri);
 
       await saveXLSXFile(uri);
 
       alert("Plik został zapisany");
     } catch (e) {
-      alert("Błąd w zapisie pliku");
+      alert("Błąd w zapisie pliku", e);
       console.error(e);
     }
   };
 
   saveXLSXFile = async (fileUri) => {
-    console.debug("a");
     const { status } = await MediaLibrary.requestPermissionsAsync();
-    console.debug("b");
     if (status === "granted") {
-      console.debug("c");
       const asset = await MediaLibrary.createAssetAsync(fileUri);
-      console.debug("d");
       await MediaLibrary.createAlbumAsync(
-        `../Projekty/${context.projectName}`,
+        `../_Projekty/${context.projectName}`,
         asset,
         false
       );
-      console.debug("e");
     } else alert("We need you permission to save this file.");
   };
 
@@ -97,7 +100,7 @@ export default function DataPreview() {
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.topLeftView}>
         <View style={styles.rowtTitle}>
-          <TouchableOpacity onPress={back}>
+          <TouchableOpacity onPress={back} style={{ width: 50 }}>
             <Icon
               name={"angle-left"}
               size={25}
@@ -119,57 +122,71 @@ export default function DataPreview() {
       <View style={{ paddingTop: 10 }}>
         <ScrollView horizontal={true}>
           <View>
-            {data.map((item, index) => (
-              <View style={styles.row}>
-                <View style={styles.rowText}>
-                  <Text style={{ fontSize: 15, width: 20 }}>
-                    {item.takeNo}{" "}
-                  </Text>
+            <View style={{ flexDirection: "row" }}>
+              <View style={{ width: 40 }} />
+              <Text style={{ width: 300 }}>Symbol lub nazwa</Text>
+              <Text style={{ width: 300 }}>Substancja</Text>
+              <Text style={{ width: 300 }}>Element</Text>
+              {context.projectWorkType && (
+                <Text style={{ width: 300 }}>Pid</Text>
+              )}
+              {context.projectWorkType && (
+                <Text style={{ width: 300 }}>Fid</Text>
+              )}
+            </View>
+            <View>
+              {data.map((item, index) => (
+                <View style={styles.row}>
+                  <View style={styles.rowText}>
+                    <Text style={{ fontSize: 15, width: 20 }}>
+                      {item["Numer punktu"]}{" "}
+                    </Text>
+                  </View>
+                  <TextInput
+                    value={item["Symbol lub nazwa elementu instalacji"]}
+                    style={[styles.inputNarr, { width: 300 }]}
+                    placeholder="Symbol lub Nazwa"
+                    onChangeText={(text) =>
+                      handleChange(text, index, "elementName")
+                    }
+                  />
+                  <TextInput
+                    value={item.Substancja}
+                    style={[styles.inputNarr, { width: 300 }]}
+                    placeholder="Substancja"
+                    onChangeText={(text) =>
+                      handleChange(text, index, "substance")
+                    }
+                  />
+                  <TextInput
+                    value={item["Typ elementu"]}
+                    style={[styles.inputNarr, { width: 300 }]}
+                    placeholder="Element"
+                    onChangeText={(text) =>
+                      handleChange(text, index, "buttonTitle")
+                    }
+                  />
+
+                  {context.projectWorkType && (
+                    <TextInput
+                      value={item.PID}
+                      style={[styles.inputNarr, { width: 300 }]}
+                      placeholder="Pid"
+                      onChangeText={(text) => handleChange(text, index, "pid")}
+                    />
+                  )}
+
+                  {context.projectWorkType && (
+                    <TextInput
+                      value={item.FID}
+                      style={[styles.inputNarr, { width: 300 }]}
+                      placeholder="Fid"
+                      onChangeText={(text) => handleChange(text, index, "fid")}
+                    />
+                  )}
                 </View>
-                <TextInput
-                  value={item.elementName}
-                  style={[styles.inputNarr, { width: 300 }]}
-                  placeholder="Symbol lub Nazwa"
-                  onChangeText={(text) =>
-                    handleChange(text, index, "elementName")
-                  }
-                />
-                <TextInput
-                  value={item.substance}
-                  style={[styles.inputNarr, { width: 300 }]}
-                  placeholder="Substancja"
-                  onChangeText={(text) =>
-                    handleChange(text, index, "substance")
-                  }
-                />
-                <TextInput
-                  value={item.buttonTitle}
-                  style={[styles.inputNarr, { width: 300 }]}
-                  placeholder="Element"
-                  onChangeText={(text) =>
-                    handleChange(text, index, "buttonTitle")
-                  }
-                />
-
-                {context.projectWorkType && (
-                  <TextInput
-                    value={item.pid}
-                    style={[styles.inputNarr, { width: 300 }]}
-                    placeholder="Pid"
-                    onChangeText={(text) => handleChange(text, index, "pid")}
-                  />
-                )}
-
-                {context.projectWorkType && (
-                  <TextInput
-                    value={item.fid}
-                    style={[styles.inputNarr, { width: 300 }]}
-                    placeholder="Fid"
-                    onChangeText={(text) => handleChange(text, index, "fid")}
-                  />
-                )}
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
         </ScrollView>
         <View style={styles.bottomComponent}>
@@ -193,7 +210,7 @@ const styles = StyleSheet.create({
   },
   topLeftView: {
     //position: "absolute",
-    paddingTop: 10,
+    //paddingTop: 10,
     left: 0,
     //width: screenWidth,
   },
@@ -211,7 +228,6 @@ const styles = StyleSheet.create({
   },
   textTitle: {
     textAlign: "left",
-    marginLeft: 15,
     fontSize: 25,
   },
   inputNarr: {

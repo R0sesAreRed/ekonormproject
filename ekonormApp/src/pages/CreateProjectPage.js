@@ -120,8 +120,6 @@ export default function CreateProjectPage() {
   };
 
   const editProject = async (id, data, type, workType) => {
-    console.debug("Edit project: ", id, data, type, workType);
-    console.debug(currItem.key);
     if (data.length > 0) {
       if (projectList.some((project) => project.key === id)) {
         const projectInfo = {
@@ -165,7 +163,7 @@ export default function CreateProjectPage() {
         <TouchableOpacity
           onPress={() => selectProject(item)}
           onLongPress={() => openSelectModal(item)}
-          delayLongPress={1500}
+          delayLongPress={1000}
         >
           <Text style={styles.flatListItemLabel}>{item.name}</Text>
         </TouchableOpacity>

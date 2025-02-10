@@ -3,6 +3,7 @@ import { TouchableOpacity, Modal, StyleSheet, View } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome6.js";
 import { Camera, CameraView } from "expo-camera";
 import { useState, useEffect, useRef } from "react";
+import { manipulateAsync } from "expo-image-manipulator";
 
 export default CameraModal = ({
   visible,
@@ -25,11 +26,14 @@ export default CameraModal = ({
 
   const takePicture = async () => {
     if (cameraRef.current && cameraReady) {
-      const photo = await cameraRef.current.takePictureAsync();
-      let updatedPhotos = [...photos, photo.uri];
+      let photo = await cameraRef.current.takePictureAsync({ exif: true });
+      //let fixedPhoto = await manipulateAsync(photo.uri, [{ rotate: -90 }]);
+      let updatedPhotos = [...photos, { uri: photo.uri, exif: photo.exif }];
       setPhotos(updatedPhotos);
       onClose();
       openPreview();
+      //alert(photo.exif?.Orientation);
+      //console.debug(photo.exif?.Orientation);
     }
   };
 
